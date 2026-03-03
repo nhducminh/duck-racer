@@ -18,3 +18,11 @@ logs/
 
 # Ignore Test folder
 Test/
+
+# Playwright & Test reports
+playwright-report/
+test-results/
+report.json
+report_admin.json
+event_detail_report_*.xlsx
+playwright.config.js
