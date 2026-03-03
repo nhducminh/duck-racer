@@ -30,8 +30,8 @@ RUN adduser -S nextjs -u 1001
 RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
 
 # Thay đổi quyền sở hữu cho toàn bộ app
-RUN chown -R nextjs:nodejs /app
-USER nextjs
+# RUN chown -R nextjs:nodejs /app
+# USER nextjs
 
 # Expose port 3000
 EXPOSE 3000

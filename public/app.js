@@ -144,6 +144,10 @@ class DuckRaceUI {
             });
             const data = await res.json();
             localStorage.setItem('currentSessionId', data.id);
+
+            // Tự động load danh sách mặc định khi tạo mới (im lặng)
+            this.loadDefaultParticipants(true);
+
             location.reload();
         } catch (err) {
             alert('Lỗi tạo session: ' + err.message);
@@ -250,13 +254,28 @@ class DuckRaceUI {
         this.excludedList.innerHTML = html + '</div>';
     }
 
-    restoreParticipant(name) {
-        this.excluded = this.excluded.filter(e => e.name !== name);
-        this.saveExcluded();
-        this.filterExcluded();
-        this.displayExcluded();
-        this.displayParticipants();
-        this.updateStartButtonText();
+    async restoreParticipant(name) {
+        if (!this.currentSessionId) return;
+
+        try {
+            // 1. Gọi API để xoá khỏi CSDL
+            const res = await fetch(`/api/excluded/${this.currentSessionId}/${encodeURIComponent(name)}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                // 2. Cập nhật LocalStorage sau khi server đã xoá
+                this.excluded = this.excluded.filter(e => e.name !== name);
+                localStorage.setItem(`excluded_${this.currentSessionId}`, JSON.stringify(this.excluded));
+
+                await this.refreshSessionData();
+                this.displayExcluded();
+                this.displayParticipants();
+                this.updateStartButtonText();
+            }
+        } catch (err) {
+            console.error('Failed to restore participant from server:', err);
+        }
     }
 
     handleFileUpload(event) {
@@ -327,13 +346,13 @@ class DuckRaceUI {
         }
     }
 
-    loadDefaultParticipants() {
+    loadDefaultParticipants(quiet = false) {
         this.allParticipants = [...this.defaultParticipants];
         localStorage.removeItem('allParticipants');
         this.participants = [...this.allParticipants];
         this.filterExcluded();
         this.displayParticipants();
-        alert('Đã tải danh sách mặc định!');
+        if (!quiet) alert('Đã tải danh sách mặc định!');
     }
 
     displayParticipants() {
@@ -390,6 +409,13 @@ class DuckRaceUI {
 
     async processRaceResults(results) {
         if (!this.currentSessionId) return;
+
+        if (results.type === 'wheel_reject') {
+            this.addToExclusions(results.name, results.reason);
+            alert(`Đã loại ${results.name} vì vắng mặt.`);
+            return;
+        }
+
         const isWheel = results.type === 'wheel';
         if (!this.lockMode) { this.lockMode = isWheel ? 'wheel' : 'race'; this.enforceModeLock(); }
         const winnersPayload = results.winners.map(name => ({

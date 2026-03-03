@@ -13,62 +13,83 @@ app.use(express.json());
 // Serve static files
 app.use(BASE_PATH, express.static(path.join(__dirname, '../public')));
 
-// API: Lấy danh sách sessions
+// --- SESSIONS ---
 app.get(BASE_PATH + '/api/sessions', (req, res) => {
     const sessions = db.prepare('SELECT * FROM sessions ORDER BY created_at DESC').all();
     res.json(sessions);
 });
 
-// API: Tạo session mới
 app.post(BASE_PATH + '/api/sessions', (req, res) => {
     const { name } = req.body;
     const info = db.prepare('INSERT INTO sessions (name) VALUES (?)').run(name || `Chương trình ${new Date().toLocaleDateString('vi-VN')}`);
     res.json({ id: info.lastInsertRowid });
 });
 
-// API: Xóa session
+app.put(BASE_PATH + '/api/sessions/:id', (req, res) => {
+    const { name, status } = req.body;
+    db.prepare('UPDATE sessions SET name = COALESCE(?, name), status = COALESCE(?, status) WHERE id = ?').run(name, status, req.params.id);
+    res.json({ success: true });
+});
+
 app.delete(BASE_PATH + '/api/sessions/:id', (req, res) => {
     const id = req.params.id;
-    const deleteWinners = db.prepare('DELETE FROM winners WHERE session_id = ?');
-    const deleteSession = db.prepare('DELETE FROM sessions WHERE id = ?');
-
-    // SQLite transaction for safety
     const transaction = db.transaction(() => {
-        deleteWinners.run(id);
-        deleteSession.run(id);
+        db.prepare('DELETE FROM winners WHERE session_id = ?').run(id);
+        db.prepare('DELETE FROM excluded WHERE session_id = ?').run(id);
+        db.prepare('DELETE FROM sessions WHERE id = ?').run(id);
     });
-
     transaction();
     res.json({ success: true });
 });
 
-// API: Lưu người thắng
-app.post(BASE_PATH + '/api/winners', (req, res) => {
-    const { sessionId, items } = req.body; // items: list of {name, round, type, date}
-    const insert = db.prepare('INSERT INTO winners (session_id, name, round, type, date) VALUES (?, ?, ?, ?, ?)');
+// --- WINNERS ---
+app.get(BASE_PATH + '/api/winners/:sessionId', (req, res) => {
+    const winners = db.prepare('SELECT * FROM winners WHERE session_id = ?').all(req.params.sessionId);
+    res.json(winners);
+});
 
+app.post(BASE_PATH + '/api/winners', (req, res) => {
+    const { sessionId, items } = req.body;
+    const insert = db.prepare('INSERT INTO winners (session_id, name, round, type, date) VALUES (?, ?, ?, ?, ?)');
     const transaction = db.transaction((winners) => {
         for (const w of winners) insert.run(sessionId, w.name, w.round, w.type, w.date);
     });
-
     transaction(items);
     res.json({ success: true });
 });
 
-// API: Lưu danh sách loại bỏ (excluded)
+app.delete(BASE_PATH + '/api/winners/:id', (req, res) => {
+    db.prepare('DELETE FROM winners WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+});
+
+// --- EXCLUDED ---
+app.get(BASE_PATH + '/api/excluded/:sessionId', (req, res) => {
+    const items = db.prepare('SELECT * FROM excluded WHERE session_id = ?').all(req.params.sessionId);
+    res.json(items);
+});
+
 app.post(BASE_PATH + '/api/excluded', (req, res) => {
-    const { sessionId, items } = req.body; // items: list of {name, reason, time}
-    const insert = db.prepare('INSERT INTO excluded (session_id, name, reason, time) VALUES (?, ?, ?, ?)');
-
+    const { sessionId, items } = req.body;
+    const insert = db.prepare('INSERT INTO excluded (session_id, name, reason, time) SELECT ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM excluded WHERE session_id = ? AND name = ? AND reason = ?)');
     const transaction = db.transaction((targets) => {
-        for (const t of targets) insert.run(sessionId, t.name, t.reason, t.time);
+        for (const t of targets) {
+            const name = typeof t === 'string' ? t : t.name;
+            const reason = typeof t === 'string' ? 'Bị loại' : t.reason;
+            const time = typeof t === 'string' ? new Date().toLocaleString('vi-VN') : t.time;
+            insert.run(sessionId, name, reason, time, sessionId, name, reason);
+        }
     });
-
     transaction(items);
     res.json({ success: true });
 });
 
-// API: Lấy toàn bộ lịch sử (cho Admin)
+app.delete(BASE_PATH + '/api/excluded/:sessionId/:name', (req, res) => {
+    db.prepare('DELETE FROM excluded WHERE session_id = ? AND name = ?').run(req.params.sessionId, req.params.name);
+    res.json({ success: true });
+});
+
+// --- ADMIN / HISTORY ---
 app.get(BASE_PATH + '/api/admin/history', (req, res) => {
     const history = db.prepare(`
     SELECT s.id as session_id, s.name as session_name, w.name, w.round, w.type, w.date, w.created_at

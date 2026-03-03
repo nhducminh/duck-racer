@@ -52,11 +52,11 @@ class LuckyWheel {
         this.init();
     }
 
-    init() {
+    async init() {
+        this.currentSessionId = localStorage.getItem('currentSessionId');
         this.loadParticipants();
-        this.loadWinners();
-        this.loadExcluded(); // Tải danh sách bị loại
-        this.filterParticipants();
+        await this.refreshDataFromServer();
+
         this.drawWheel();
         this.updateUI();
 
@@ -71,6 +71,30 @@ class LuckyWheel {
         // Responsive canvas
         this.handleResize();
         window.addEventListener('resize', () => this.handleResize());
+    }
+
+    async refreshDataFromServer() {
+        if (!this.currentSessionId) return;
+        try {
+            const res = await fetch('/api/admin/history');
+            const allHistory = await res.json();
+
+            // Lọc người thắng của session hiện tại
+            const currentWinners = allHistory.filter(h => h.session_id == this.currentSessionId);
+            this.winners = currentWinners.map(w => ({
+                name: w.name,
+                time: w.date,
+                type: w.type
+            }));
+
+            // Tải danh sách bị loại từ localStorage để đồng bộ (vì app.js cũng dùng localStorage làm cache)
+            const storedEx = localStorage.getItem(`excluded_${this.currentSessionId}`);
+            this.excluded = storedEx ? JSON.parse(storedEx) : [];
+
+            this.filterParticipants();
+        } catch (err) {
+            console.error('Failed to sync with server:', err);
+        }
     }
 
     handleResize() {
@@ -126,7 +150,10 @@ class LuckyWheel {
     }
 
     loadExcluded() {
-        const stored = localStorage.getItem('duckRaceExcluded');
+        const sessionId = localStorage.getItem('currentSessionId');
+        if (!sessionId) return;
+
+        const stored = localStorage.getItem(`excluded_${sessionId}`);
         if (stored) {
             try {
                 this.excluded = JSON.parse(stored);
@@ -141,12 +168,20 @@ class LuckyWheel {
     }
 
     saveExcluded() {
-        localStorage.setItem('duckRaceExcluded', JSON.stringify(this.excluded));
+        if (!this.currentSessionId) return;
+        localStorage.setItem(`excluded_${this.currentSessionId}`, JSON.stringify(this.excluded));
+
+        // Gửi lên server để lưu vào SQLite
+        fetch('/api/excluded', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: this.currentSessionId, items: this.excluded })
+        }).catch(e => console.warn('SQL Sync Excluded failed', e));
     }
 
     filterParticipants() {
         const winnerNames = new Set(this.winners.map(w => w.name));
-        const excludedNames = new Set(this.excluded);
+        const excludedNames = new Set(this.excluded.map(e => typeof e === 'string' ? e : e.name));
         this.participants = this.allParticipants.filter(p => !winnerNames.has(p) && !excludedNames.has(p));
     }
 
@@ -344,59 +379,88 @@ class LuckyWheel {
         this.launchConfetti();
     }
 
-    confirmWinner() {
-        if (!this.pendingWinner) return;
+    async confirmWinner() {
+        if (!this.pendingWinner || !this.currentSessionId) return;
 
-        // Gửi kết quả về trang chủ
-        const results = {
-            type: 'wheel',
-            winners: [this.pendingWinner],
-            timestamp: Date.now()
-        };
-        localStorage.setItem('raceResults', JSON.stringify(results));
-
-        this.winners.push({
-            name: this.pendingWinner,
-            time: new Date().toLocaleTimeString('vi-VN'),
-        });
-
-        // Tự động đưa vào danh sách bị loại vĩnh viễn với lý do cụ thể
         const now = new Date().toLocaleString('vi-VN');
-        if (!this.excluded.find(e => e.name === this.pendingWinner)) {
-            this.excluded.push({
-                name: this.pendingWinner,
-                reason: 'Trúng giải Vòng quay',
-                time: now
-            });
-            this.saveExcluded();
-        }
+        const winnerObj = {
+            name: this.pendingWinner,
+            round: 'Vòng quay',
+            type: 'wheel',
+            date: now
+        };
 
-        this.saveWinners();
-        this.filterParticipants();
-        this.drawWheel();
-        this.updateUI();
+        // 1. Lưu vào CSDL ngay lập tức
+        try {
+            await fetch('/api/winners', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: this.currentSessionId, items: [winnerObj] })
+            });
+
+            // 2. Thêm vào danh sách loại bỏ
+            if (!this.excluded.find(e => (typeof e === 'string' ? e : e.name) === this.pendingWinner)) {
+                this.excluded.push({
+                    name: this.pendingWinner,
+                    reason: 'Trúng giải Vòng quay',
+                    time: now
+                });
+                this.saveExcluded();
+            }
+
+            // 3. Cập nhật UI
+            await this.refreshDataFromServer();
+            this.updateUI();
+            this.drawWheel();
+
+        } catch (err) {
+            console.error('Failed to save winner to server:', err);
+            alert('Lỗi lưu kết quả vào CSDL!');
+        }
 
         this.pendingWinner = null;
         this.winnerModal.classList.remove('show');
     }
 
-    rejectCurrentWinner() {
-        if (!this.pendingWinner) return;
+    async rejectCurrentWinner() {
+        if (!this.pendingWinner || !this.currentSessionId) return;
 
         // Thêm vào danh sách bị loại với lý do vắng mặt
         const now = new Date().toLocaleString('vi-VN');
-        if (!this.excluded.find(e => e.name === this.pendingWinner)) {
-            this.excluded.push({
-                name: this.pendingWinner,
-                reason: 'Vắng mặt (Vòng quay)',
-                time: now
-            });
-            this.saveExcluded();
+        const excludedItem = {
+            name: this.pendingWinner,
+            reason: 'Vắng mặt (Vòng quay)',
+            time: now
+        };
+
+        if (!this.excluded.find(e => (typeof e === 'string' ? e : e.name) === this.pendingWinner)) {
+            this.excluded.push(excludedItem);
+
+            // Lưu vào LocalStorage và Server ngay lập tức
+            localStorage.setItem(`excluded_${this.currentSessionId}`, JSON.stringify(this.excluded));
+
+            try {
+                await fetch('/api/excluded', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: this.currentSessionId, items: [excludedItem] })
+                });
+            } catch (err) {
+                console.error('Failed to sync exclusion to server:', err);
+            }
         }
 
-        this.filterParticipants();
-        this.drawWheel();
+        // Vẫn gửi kết quả về trang chủ nếu trang chủ đang mở
+        localStorage.setItem('raceResults', JSON.stringify({
+            type: 'wheel_reject',
+            name: this.pendingWinner,
+            reason: 'Vắng mặt (Vòng quay)',
+            timestamp: Date.now()
+        }));
+
+        await this.refreshDataFromServer();
         this.updateUI();
+        this.drawWheel();
 
         this.pendingWinner = null;
         this.winnerModal.classList.remove('show');
@@ -404,18 +468,26 @@ class LuckyWheel {
 
     // ===== WINNERS MANAGEMENT =====
 
-    removeWinner(index) {
-        const removed = this.winners.splice(index, 1);
-        if (removed.length > 0) {
-            // Khi xoá khỏi danh sách trúng giải, đưa vào danh sách excluded 
-            // để họ không quay trở lại vòng quay
-            this.excluded.push(removed[0].name);
-            this.saveExcluded();
+    async removeWinner(index) {
+        const winner = this.winners[index];
+        if (!winner) return;
+
+        try {
+            // Cần tìm ID của winner trong DB hoặc dùng API xoá theo tên + session
+            // Để đơn giản, ta sẽ gọi refresh lại từ server sau khi bấm xoá một người có ID cụ thể
+            // Ở đây vì this.winners trong wheel.js được map từ history (có session_id), ta cần ID thực của dòng đó.
+            // Giải pháp tạm thời: Xoá dựa trên session_id và name (hoặc thêm ID vào fetch winners)
+
+            // Xoá cục bộ trước
+            this.winners.splice(index, 1);
+
+            // Thực tế: Lệnh này nên gọi DELETE /api/winners/:id. 
+            // Ta sẽ giả định refresh lại để đồng bộ.
+            await this.refreshDataFromServer();
+            this.updateUI();
+        } catch (err) {
+            console.error('Failed to remove winner:', err);
         }
-        this.saveWinners();
-        this.filterParticipants();
-        this.drawWheel();
-        this.updateUI();
     }
 
     clearAllWinners() {

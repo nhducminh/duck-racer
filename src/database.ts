@@ -4,10 +4,18 @@ import path from 'path';
 const dbDir = path.resolve(process.cwd(), 'data');
 const dbPath = path.join(dbDir, 'database.sqlite');
 
-// Đảm bảo thư mục data tồn tại (dùng cho môi trường dev không docker)
+// Đảm bảo thư mục data tồn tại
 import fs from 'fs';
-if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+try {
+  if (!fs.existsSync(dbDir)) {
+    console.log('Creating data directory at:', dbDir);
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+} catch (err) {
+  console.error('Failed to create data directory:', err);
+}
 
+console.log('Connecting to database at:', dbPath);
 const db = new Database(dbPath);
 
 // Khởi tạo cấu trúc bảng cho SQLite
