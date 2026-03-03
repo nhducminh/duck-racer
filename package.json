@@ -1,0 +1,35 @@
+{
+  "name": "duck-race-app",
+  "version": "1.0.0",
+  "description": "A fun application that simulates a duck race.",
+  "main": "src/app.ts",
+  "scripts": {
+    "start": "node dist/app.js",
+    "dev": "ts-node src/app.ts",
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.6",
+    "express": "^4.17.1",
+    "typescript": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.7.0",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.6",
+    "ts-node": "^10.4.0"
+  },
+  "keywords": [
+    "duck",
+    "race",
+    "simulation",
+    "fun"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

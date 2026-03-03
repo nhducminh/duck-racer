@@ -1,0 +1,193 @@
+/* Base styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    color: #333;
+}
+
+#app {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+h1 {
+    text-align: center;
+    color: #4a90e2;
+    font-size: 2.5em;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.controls {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    border: 2px solid #e9ecef;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Main Action Buttons - Unified Styling */
+.action-btn-main {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 40px;
+    height: 80px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    min-width: 320px;
+    text-align: center;
+    line-height: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    margin: 0;
+    /* Reset margins */
+}
+
+.main-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+#startRace {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+#startRace:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(76, 175, 80, 0.6);
+}
+
+.wheel-btn {
+    background: linear-gradient(45deg, #E64B19, #d43d10);
+    color: white;
+    box-shadow: 0 5px 15px rgba(230, 75, 25, 0.4);
+}
+
+.wheel-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(230, 75, 25, 0.6);
+}
+
+/* File Upload */
+.file-upload {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.file-upload label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#csvFile {
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    background: white;
+}
+
+#loadDefault {
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+/* Race Settings */
+.race-settings {
+    margin-bottom: 20px;
+}
+
+.race-settings label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.race-settings input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 60px;
+}
+
+/* Participants display */
+.participants-display {
+    margin-top: 30px;
+}
+
+.participants-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+}
+
+.participants-list li {
+    background: #f1f1f1;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+/* Winners Section */
+.winners-section {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid #eee;
+}
+
+.winners-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.winners-controls button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#copyWinners {
+    background: #3498db;
+    color: white;
+}
+
+#removeWinners {
+    background: #e74c3c;
+    color: white;
+}
+
+#resetWinners {
+    background: #95a5a6;
+    color: white;
+}

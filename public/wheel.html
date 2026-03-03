@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vòng Quay May Mắn - NPK Phú Mỹ</title>
+    <meta name="description"
+        content="Vòng quay may mắn trong chương trình Cuộc đua kì thú NPK Phú Mỹ - Cho mùa bội thu">
+    <link rel="stylesheet" href="wheel-styles.css">
+</head>
+
+<body>
+    <div id="wheelApp">
+        <!-- Header -->
+        <div class="wheel-header">
+            <h1>🎡 Vòng Quay May Mắn</h1>
+            <p>Chương trình NPK Phú Mỹ — Cho mùa bội thu</p>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="wheel-layout">
+            <!-- Left: Wheel -->
+            <div class="glass-card wheel-section">
+                <div class="participant-badge" id="participantBadge">
+                    🎯 Còn lại: <strong id="remainingCount">0</strong> người tham gia
+                </div>
+
+                <div class="wheel-wrapper">
+                    <div class="wheel-pointer" id="wheelPointer">📍</div>
+                    <div class="wheel-canvas-container">
+                        <canvas id="wheelCanvas" width="460" height="460"></canvas>
+                    </div>
+                </div>
+
+                <button class="spin-btn" id="spinBtn">🎰 Quay ngay!</button>
+            </div>
+
+            <!-- Right: Sidebar -->
+            <div class="sidebar">
+                <!-- Winners -->
+                <div class="glass-card">
+                    <div class="section-title">
+                        <span class="icon">🏆</span>
+                        Danh sách trúng giải
+                        <span class="count" id="winnersCount">0</span>
+                    </div>
+                    <ul class="winners-list" id="winnersList">
+                        <li class="empty-state">Chưa có người trúng giải</li>
+                    </ul>
+                    <div class="action-row" id="winnersActions" style="display: none;">
+                        <button class="action-btn danger" id="clearWinnersBtn">🗑️ Xoá tất cả</button>
+                    </div>
+                </div>
+
+                <!-- Remaining Participants -->
+                <div class="glass-card">
+                    <div class="section-title">
+                        <span class="icon">👥</span>
+                        Người tham gia
+                        <span class="count" id="participantsCount">0</span>
+                    </div>
+                    <div class="remaining-list-container">
+                        <ul class="remaining-list" id="remainingList"></ul>
+                    </div>
+                </div>
+
+                <!-- Back -->
+                <div class="back-btn-container">
+                    <button class="back-btn" id="backBtn">← Quay lại trang chính</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Winner Modal -->
+    <div class="winner-modal" id="winnerModal">
+        <div class="winner-modal-content">
+            <div class="trophy">🎊</div>
+            <h2>Chúc mừng!</h2>
+            <div class="winner-display-name" id="winnerDisplayName"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn" id="acceptWinnerBtn">✅ Xác nhận trúng giải</button>
+                <button class="modal-btn reject" id="rejectWinnerBtn">❌ Không có mặt</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="wheel.js"></script>
+</body>
+
+</html>

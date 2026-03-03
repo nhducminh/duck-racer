@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đang diễn ra cuộc đua - NPK Phú Mỹ</title>
+    <link rel="stylesheet" href="race-styles.css">
+</head>
+
+<body>
+    <div id="raceApp">
+        <h1>🏎️ Cuộc đua kì thú NPK ✨</h1>
+
+        <!-- Thanh điều khiển phía trên -->
+        <div class="top-controls">
+            <div class="speed-panel">
+                <span class="speed-label">⚡ Tốc độ:</span>
+                <div class="speed-buttons">
+                    <button class="speed-btn" data-speed="0.5">0.5x</button>
+                    <button class="speed-btn active" data-speed="1">1.0x</button>
+                    <button class="speed-btn" data-speed="2">2.0x</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="raceTrack"></div>
+        <div id="results"></div>
+
+        <!-- Results Popup Modal -->
+        <div id="resultsModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="modalContent"></div>
+            </div>
+        </div>
+
+        <div class="back-button-container" style="margin-top: 50px;">
+            <button id="backButton">Quay lại trang chính</button>
+        </div>
+    </div>
+    <script src="race.js"></script>
+</body>
+
+</html>

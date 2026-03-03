@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuộc đua kì thú - NPK Phú Mỹ</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <h1>Chào mừng bạn đến với Cuộc đua kì thú!</h1>
+        <p id="sessionSubtitle"
+            style="text-align: center; color: #555; font-size: 1.25rem; margin-top: -15px; margin-bottom: 25px; font-weight: 500;">
+        </p>
+
+        <div class="session-management"
+            style="background: #f1f8ff; padding: 15px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #c8e1ff; display: flex; justify-content: center; align-items: center;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <strong>📅 Trạng thái:</strong>
+                <span id="currentSessionName" style="color: #0366d6; font-weight: bold; padding: 0 10px;">Đang
+                    tải...</span>
+                <button id="newSessionBtn"
+                    style="padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">➕
+                    Bắt đầu Lượt mới (Ngày mới)</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="file-upload">
+                <label for="csvFile">Tải lên danh sách (Excel hoặc CSV):</label>
+                <input type="file" id="csvFile" accept=".csv, .xlsx, .xls" />
+                <button id="loadDefault">Sử dụng danh sách mặc định</button>
+            </div>
+
+            <div class="race-settings">
+                <label for="topCount">Số lượng top mỗi lượt:</label>
+                <input type="number" id="topCount" min="1" max="50" value="5" placeholder="Nhập số lượng top">
+                <small>Có thể nhập từ 1 đến 50. Đua sẽ dừng khi có đủ số lượng top về đích.</small>
+
+                <!-- <div class="examples">
+                    <strong>Ví dụ:</strong>
+                    <ul>
+                        <li>Top 3: Dừng khi có <strong>3</strong> con vịt về đích</li>
+                        <li>Top 10: Dừng khi có <strong>10</strong> con vịt về đích</li>
+                        <li>Top 20: Dừng khi có <strong>20</strong> con vịt về đích</li>
+                    </ul>
+                </div>
+                 -->
+                <label>
+                    <input type="checkbox" id="multipleRounds" checked>
+                    Thi nhiều lượt liên tiếp
+                </label>
+            </div>
+
+            <div class="main-actions">
+                <button id="startRace" class="action-btn-main">🦆 Bắt đầu cuộc đua</button>
+                <button id="openWheel" class="action-btn-main wheel-btn">🎡 Vòng Quay May Mắn</button>
+            </div>
+        </div>
+
+        <div class="winners-section" style="display: none;">
+            <h3>🏆 Danh sách trúng thưởng</h3>
+            <div class="winners-controls">
+                <button id="copyWinners">📋 Copy danh sách trúng</button>
+                <button id="exportWinners">📥 Xuất danh sách trúng thưởng</button>
+                <button id="removeWinners" style="display:none;">❌ Loại bỏ khỏi danh sách thi</button>
+                <button id="resetWinners">🔄 Reset toàn bộ chương trình</button>
+            </div>
+            <div id="winnersList"></div>
+        </div>
+
+        <div id="participantsList"></div>
+
+        <div class="excluded-section"
+            style="display: none; margin-top: 50px; border-top: 2px dashed #eee; padding-top: 20px;">
+            <h3>🚫 Nhật ký loại bỏ & Khôi phục</h3>
+            <p><small>Danh sách những người đã trúng giải hoặc vắng mặt đã bị đưa ra ngoài vòng quay/đua.</small></p>
+            <div id="excludedList" class="excluded-list"></div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
