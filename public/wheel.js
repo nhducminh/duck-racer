@@ -111,30 +111,18 @@ class LuckyWheel {
         this.drawWheel();
     }
 
-    loadParticipants() {
-        // Ưu tiên lấy từ duckRaceData (cùng nguồn với cuộc đua)
-        const raceDataStored = localStorage.getItem('duckRaceData');
-        if (raceDataStored) {
-            try {
-                const raceData = JSON.parse(raceDataStored);
-                this.allParticipants = raceData.participants;
-            } catch (e) {
-                console.error('Error parsing duckRaceData');
+    async loadParticipants() {
+        if (!this.currentSessionId) return;
+        try {
+            const res = await fetch(`/api/participants/${this.currentSessionId}`);
+            if (res.ok) {
+                this.allParticipants = await res.json();
+                this.filterParticipants();
+                this.drawWheel();
+                this.updateUI();
             }
-        } else {
-            // Fallback sang key cũ nếu không có raceData
-            const stored = localStorage.getItem('duckRaceParticipants');
-            if (stored) {
-                try {
-                    this.allParticipants = JSON.parse(stored);
-                } catch (e) {
-                    console.error('Error parsing participants');
-                }
-            }
-        }
-
-        if (this.allParticipants.length === 0) {
-            this.allParticipants = this.getDefaultParticipants();
+        } catch (err) {
+            console.error('Failed to load participants for wheel:', err);
         }
     }
 

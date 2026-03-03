@@ -89,6 +89,25 @@ app.delete(BASE_PATH + '/api/excluded/:sessionId/:name', (req, res) => {
     res.json({ success: true });
 });
 
+// --- PARTICIPANTS ---
+app.get(BASE_PATH + '/api/participants/:sessionId', (req, res) => {
+    const list = db.prepare('SELECT name FROM participants WHERE session_id = ?').all(req.params.sessionId) as { name: string }[];
+    res.json(list.map(p => p.name));
+});
+
+app.post(BASE_PATH + '/api/participants', (req, res) => {
+    const { sessionId, items } = req.body;
+    const transaction = db.transaction((names) => {
+        // Xoá danh sách cũ của session này
+        db.prepare('DELETE FROM participants WHERE session_id = ?').run(sessionId);
+        // Thêm mới
+        const insert = db.prepare('INSERT INTO participants (session_id, name) VALUES (?, ?)');
+        for (const name of names) insert.run(sessionId, name);
+    });
+    transaction(items);
+    res.json({ success: true });
+});
+
 // --- ADMIN / HISTORY ---
 app.get(BASE_PATH + '/api/admin/history', (req, res) => {
     const history = db.prepare(`

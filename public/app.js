@@ -14,15 +14,7 @@ class DuckRaceUI {
             'Trần Thị Yến', 'Phạm Văn Zung', 'Hoàng Thị Ánh', 'Vũ Văn Bình', 'Đặng Thị Châu'
         ];
         this.defaultParticipants = [...this.participants];
-
-        // Load saved participants from localStorage if available
-        const savedParticipants = localStorage.getItem('allParticipants');
-        if (savedParticipants) {
-            this.allParticipants = JSON.parse(savedParticipants);
-            this.participants = [...this.allParticipants];
-        } else {
-            this.allParticipants = [...this.participants];
-        }
+        this.allParticipants = [...this.participants]; // Khởi tạo tạm thời trước khi load từ server
 
         this.winners = [];
         this.excluded = [];
@@ -107,6 +99,8 @@ class DuckRaceUI {
                 this.startButton.disabled = false;
                 if (this.wheelButton) this.wheelButton.disabled = false;
 
+                // Tải danh sách người tham gia từ Server
+                await this.loadParticipants();
                 await this.refreshSessionData();
             } else {
                 // Trình duyệt mới chưa có session
@@ -161,7 +155,7 @@ class DuckRaceUI {
             const res = await fetch('/api/admin/history');
             const allHistory = await res.json();
 
-            const currentWinners = allHistory.filter(h => h.session_id === this.currentSessionId);
+            const currentWinners = allHistory.filter(h => h.session_id == this.currentSessionId);
 
             const rounds = {};
             currentWinners.forEach(w => {
@@ -185,7 +179,18 @@ class DuckRaceUI {
                 this.currentRound = raceRounds.length > 0 ? Math.max(...raceRounds) : 0;
             }
 
-            this.loadExcluded();
+            // Sync Excluded from Server
+            try {
+                const exRes = await fetch(`/api/excluded/${this.currentSessionId}`);
+                if (exRes.ok) {
+                    this.excluded = await exRes.json();
+                    localStorage.setItem(`excluded_${this.currentSessionId}`, JSON.stringify(this.excluded));
+                }
+            } catch (e) {
+                console.warn('Sync excluded from server failed, using local fallback');
+                this.loadExcluded();
+            }
+
             this.filterExcluded();
             this.displayParticipants();
             this.displayExcluded();
@@ -212,7 +217,12 @@ class DuckRaceUI {
     }
 
     filterExcluded() {
-        const excludedNames = new Set(this.excluded.map(e => e.name));
+        // Gom tất cả những người cần loại bỏ (trúng giải và bị loại)
+        const excludedNames = new Set([
+            ...this.excluded.map(e => (typeof e === 'string' ? e : e.name)),
+            ...this.winners.flatMap(r => r.winners)
+        ]);
+
         this.participants = this.allParticipants.filter(p => !excludedNames.has(p));
     }
 
@@ -294,7 +304,7 @@ class DuckRaceUI {
         reader.readAsArrayBuffer(file);
     }
 
-    parseData(dataRows) {
+    async parseData(dataRows) {
         if (dataRows.length === 0) return alert('Tệp trống!');
         const headers = dataRows[0].map(h => (h || '').toString().toLowerCase().trim());
 
@@ -336,7 +346,14 @@ class DuckRaceUI {
 
         if (parsedParticipants.length > 0) {
             this.allParticipants = parsedParticipants;
-            localStorage.setItem('allParticipants', JSON.stringify(parsedParticipants));
+
+            // Lưu lên server SQLite
+            await fetch('/api/participants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: this.currentSessionId, items: parsedParticipants })
+            });
+
             this.participants = [...parsedParticipants];
             this.filterExcluded();
             this.displayParticipants();
@@ -346,13 +363,24 @@ class DuckRaceUI {
         }
     }
 
-    loadDefaultParticipants(quiet = false) {
+    async loadDefaultParticipants(quiet = false) {
+        if (!this.currentSessionId) return;
         this.allParticipants = [...this.defaultParticipants];
-        localStorage.removeItem('allParticipants');
-        this.participants = [...this.allParticipants];
-        this.filterExcluded();
-        this.displayParticipants();
-        if (!quiet) alert('Đã tải danh sách mặc định!');
+
+        try {
+            await fetch('/api/participants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: this.currentSessionId, items: this.allParticipants })
+            });
+
+            this.participants = [...this.allParticipants];
+            this.filterExcluded();
+            this.displayParticipants();
+            if (!quiet) alert('Đã tải danh sách mặc định!');
+        } catch (err) {
+            console.error('Failed to load default participants to server:', err);
+        }
     }
 
     displayParticipants() {
