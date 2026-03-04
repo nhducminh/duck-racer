@@ -306,42 +306,58 @@ class DuckRaceUI {
 
     async parseData(dataRows) {
         if (dataRows.length === 0) return alert('Tệp trống!');
-        const headers = dataRows[0].map(h => (h || '').toString().toLowerCase().trim());
 
+        let headerRowIdx = -1;
         let nameIdx = -1;
         let phoneIdx = -1;
 
-        // Ưu tiên tìm chính xác theo yêu cầu người dùng
-        headers.forEach((h, idx) => {
-            if (h === 'tên khách hàng' || h === 'họ và tên') nameIdx = idx;
-            if (h === 'số điện thoại khách hàng' || h === 'số điện thoại' || h === 'số điện thoại ') phoneIdx = idx;
-        });
+        // Tự động dò tìm dòng chứa tiêu đề cột (quét 10 dòng đầu tiên)
+        const maxScanRows = Math.min(dataRows.length, 10);
+        for (let i = 0; i < maxScanRows; i++) {
+            const row = dataRows[i].map(h => (h || '').toString().toLowerCase().trim());
+            let foundName = -1;
+            let foundPhone = -1;
 
-        // Nếu không tìm thấy chính xác, dùng logic cũ để gợi ý
-        if (nameIdx === -1) {
-            headers.forEach((h, idx) => {
-                if (h.includes('tên') || h.includes('khách hàng') || h.includes('name')) { if (nameIdx === -1) nameIdx = idx; }
+            row.forEach((cell, idx) => {
+                const c = cell.toString().toLowerCase().trim();
+                if (c === 'tên khách hàng' || c === 'họ và tên' || c === 'tên') foundName = idx;
+                if (c.includes('số điện thoại') || c === 'sđt' || c === 'điện thoại') foundPhone = idx;
+            });
+
+            if (foundName !== -1) {
+                headerRowIdx = i;
+                nameIdx = foundName;
+                phoneIdx = foundPhone;
+                break;
+            }
+        }
+
+        // Nếu không dò tìm thấy bằng từ khoá chính xác, mặc định dùng dòng 0 (như cũ)
+        if (headerRowIdx === -1) {
+            headerRowIdx = 0;
+            nameIdx = 0; // Mặc định cột 0 là tên
+            const firstRow = dataRows[0].map(h => (h || '').toString().toLowerCase().trim());
+            firstRow.forEach((h, idx) => {
+                if (h.includes('số') || h.includes('điện thoại') || h.includes('phone') || h.includes('sđt')) phoneIdx = idx;
             });
         }
-        if (phoneIdx === -1) {
-            headers.forEach((h, idx) => {
-                if (h.includes('số') || h.includes('điện thoại') || h.includes('phone') || h.includes('sđt')) { if (phoneIdx === -1) phoneIdx = idx; }
-            });
-        }
-
-        if (nameIdx === -1) nameIdx = 0;
 
         const parsedParticipants = [];
-        for (let i = 1; i < dataRows.length; i++) {
+        // Dữ liệu bắt đầu từ sau dòng tiêu đề
+        for (let i = headerRowIdx + 1; i < dataRows.length; i++) {
             const row = dataRows[i];
             let nameVal = (row[nameIdx] || '').toString().trim();
+            // Bỏ qua dòng tiêu đề phụ nếu tình cờ quét trúng
+            if (!nameVal || nameVal.toLowerCase() === 'tên' || nameVal.toLowerCase() === 'tên khách hàng') continue;
+
             let phoneVal = phoneIdx !== -1 ? (row[phoneIdx] || '').toString().trim() : '';
 
-            if (nameVal) {
-                let fullName = nameVal;
-                if (phoneVal) fullName += ` - ${phoneVal}`;
-                parsedParticipants.push(fullName);
+            let fullName = nameVal;
+            if (phoneVal) {
+                // Xử lý số điện thoại Excel nếu bị lỗi định dạng
+                fullName += ` - ${phoneVal}`;
             }
+            parsedParticipants.push(fullName);
         }
 
         if (parsedParticipants.length > 0) {
