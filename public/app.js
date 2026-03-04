@@ -313,8 +313,8 @@ class DuckRaceUI {
 
         // Ưu tiên tìm chính xác theo yêu cầu người dùng
         headers.forEach((h, idx) => {
-            if (h === 'tên khách hàng') nameIdx = idx;
-            if (h === 'số điện thoại khách hàng' || h === 'số điện thoại') phoneIdx = idx;
+            if (h === 'tên khách hàng' || h === 'họ và tên') nameIdx = idx;
+            if (h === 'số điện thoại khách hàng' || h === 'số điện thoại' || h === 'số điện thoại ') phoneIdx = idx;
         });
 
         // Nếu không tìm thấy chính xác, dùng logic cũ để gợi ý
